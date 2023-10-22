@@ -1075,7 +1075,7 @@ void _blitRow(Image_ img, int xy, Image_ from, int xh) {
     blitRow(img, XX(xy), YY(xy), from, XX(xh), YY(xh));
 }
 
-bool blit(Image_ dst, Image_ src, pxt::RefCollection *args) {
+bool blit(Image_ dst, Image_ src, RefCollection *args) {
     int xDst = pxt::toInt(args->getAt(0));
     int yDst = pxt::toInt(args->getAt(1));
     int wDst = pxt::toInt(args->getAt(2));
@@ -1126,7 +1126,7 @@ bool blit(Image_ dst, Image_ src, pxt::RefCollection *args) {
 }
 
 //%
-bool _blit(Image_ img, Image_ src, pxt::RefCollection *args) {
+bool _blit(Image_ img, Image_ src, RefCollection *args) {
     return blit(img, src, args);
 }
 
@@ -1420,7 +1420,7 @@ void fillPolygon4(Image_ img, int x0, int y0, int x1, int y1, int x2, int y2, in
 }
 
 //%
-void _fillTriangle(Image_ img, pxt::RefCollection *args) {
+void _fillTriangle(Image_ img, RefCollection *args) {
     fillTriangle(
         img,
         pxt::toInt(args->getAt(0)),
@@ -1440,7 +1440,7 @@ void _fillTriangle(Image_ img, pxt::RefCollection *args) {
 // Fortunately, no matter what perspective transform is applied, a rectangle/trapezoid will still meet this condition.
 // Ref: https://forum.makecode.com/t/new-3d-engine-help-filling-4-sided-polygons/18641/9
 //%
-void _fillPolygon4(Image_ img, pxt::RefCollection *args) {
+void _fillPolygon4(Image_ img, RefCollection *args) {
     fillPolygon4(
         img,
         pxt::toInt(args->getAt(0)),

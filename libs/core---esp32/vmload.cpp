@@ -44,9 +44,5 @@ void vmStart() {
     vmStartCore((uint8_t *)sect, hd->imageSize);
 }
 
-//% expose
-void updateScreen(Image_ img) {
-    // dummy
-}
 
 } // namespace pxt
