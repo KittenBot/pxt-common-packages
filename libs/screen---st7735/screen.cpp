@@ -53,7 +53,8 @@ class WDisplay {
 
         SPI *spi = NULL;
         if (conn == 0) {
-            spi = new CODAL_SPI(*LOOKUP_PIN(DISPLAY_MOSI), *miso, *LOOKUP_PIN(DISPLAY_SCK));
+            // spi = new CODAL_SPI(*LOOKUP_PIN(DISPLAY_MOSI), *miso, *LOOKUP_PIN(DISPLAY_SCK));
+            spi = new CODAL_SPI(*miso, *LOOKUP_PIN(DISPLAY_MOSI), *LOOKUP_PIN(DISPLAY_SCK));
             io = new SPIScreenIO(*spi);
         } else if (conn == 1) {
 #ifdef CODAL_CREATE_PARALLEL_SCREEN_IO
@@ -88,6 +89,8 @@ class WDisplay {
             auto freq = (cfg2 & 0xff);
             if (!freq)
                 freq = 15;
+            freq = 1;
+            DMESG("spi freq: %d", freq);
             spi->setFrequency(freq * 1000000);
             spi->setMode(0);
             auto cs = LOOKUP_PIN(DISPLAY_CS);
@@ -134,20 +137,23 @@ class WDisplay {
 
         DMESG("74HC: waiting...");
 
+        auto rst = LOOKUP_PIN(DISPLAY_RST);
+
+        if (rst) {
+            rst->setDigitalValue(0);
+            target_wait_us(10);
+            rst->setDigitalValue(1);
+            fiber_sleep(3); // in reality we need around 1.2ms
+        }
+
         // wait while nothing is connected
-        for (;;) {
-            auto rst = LOOKUP_PIN(DISPLAY_RST);
-            if (rst) {
-                rst->setDigitalValue(0);
-                target_wait_us(10);
-                rst->setDigitalValue(1);
-                fiber_sleep(3); // in reality we need around 1.2ms
-            }
+        for (;;) {            
 
             hc = readButtonMultiplexer(17);
             if (hc != 0)
                 break;
 
+            DMESG("hc = %x", hc);
             fiber_sleep(100);
 
             // the device will run without shield when the following is specified in user program:

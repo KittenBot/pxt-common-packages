@@ -1,8 +1,8 @@
 #include "pxt.h"
 #include "jddisplay.h"
 
-#define VLOG NOLOG
-//#define VLOG DMESG
+// #define VLOG NOLOG
+#define VLOG DMESG
 
 namespace pxt {
 
@@ -116,6 +116,7 @@ void JDDisplay::flushSend() {
         cs->setDigitalValue(0);
     spi->startTransfer((uint8_t *)&sendFrame, sizeof(sendFrame), (uint8_t *)&recvFrame,
                        sizeof(recvFrame), &JDDisplay::stepStatic, this);
+    DMESG("JDA: flush %d", sizeof(sendFrame));
 }
 
 void JDDisplay::stepStatic(void *p) {
@@ -220,7 +221,7 @@ void JDDisplay::handleIncoming(jd_packet_t *pkt) {
 void JDDisplay::step() {
     if (cs)
         cs->setDigitalValue(1);
-
+    DMESG("JDA: step %d %d", stepWaiting, flow->getDigitalValue());
     target_disable_irq();
     if (!flow->getDigitalValue()) {
         stepWaiting = true;
@@ -234,7 +235,11 @@ void JDDisplay::step() {
     memset(&sendFrame, 0, JD_SERIAL_FULL_HEADER_SIZE);
     sendFrame.crc = JDSPI_MAGIC;
     sendFrame.device_identifier = pxt::getLongSerialNumber();
-
+    uint8_t *data = (uint8_t *)&recvFrame;
+    // print first 16 bytes
+    for (int i = 0; i < 16; i=i+4) {
+        DMESG("rx %x %x %x %x", data[i], data[i+1], data[i+2], data[i+3]);
+    }
     if (recvFrame.crc == JDSPI_MAGIC_NOOP) {
         // empty frame, skip
     } else if (recvFrame.crc != JDSPI_MAGIC) {
