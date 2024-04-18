@@ -86,6 +86,8 @@ JDDisplay::JDDisplay(SPI *spi, Pin *cs, Pin *flow) : spi(spi), cs(cs), flow(flow
     avgFrameTime = 26300; // start with a reasonable default
     lastFrameTimestamp = 0;
 
+    rxBuff = (uint8_t *)malloc(JD_SERIAL_FULL_HEADER_SIZE + JD_SERIAL_PAYLOAD_SIZE);
+
     EventModel::defaultEventBus->listen(DEVICE_ID_DISPLAY, 4243, this, &JDDisplay::sendDone);
 
     flow->getDigitalValue(PullMode::Down);
@@ -114,8 +116,8 @@ void *JDDisplay::queuePkt(uint32_t service_num, uint32_t service_cmd, uint32_t s
 void JDDisplay::flushSend() {
     if (cs)
         cs->setDigitalValue(0);
-    spi->startTransfer((uint8_t *)&sendFrame, sizeof(sendFrame), (uint8_t *)&recvFrame,
-                       sizeof(recvFrame), &JDDisplay::stepStatic, this);
+    spi->startTransfer((uint8_t *)&sendFrame, sizeof(sendFrame), (uint8_t *)rxBuff,
+                       sizeof(sendFrame), &JDDisplay::stepStatic, this);
     DMESG("JDA: flush %d", sizeof(sendFrame));
 }
 
@@ -235,21 +237,26 @@ void JDDisplay::step() {
     memset(&sendFrame, 0, JD_SERIAL_FULL_HEADER_SIZE);
     sendFrame.crc = JDSPI_MAGIC;
     sendFrame.device_identifier = pxt::getLongSerialNumber();
-    uint8_t *data = (uint8_t *)&recvFrame;
+    uint8_t *data = (uint8_t *)rxBuff;
     // print first 16 bytes
     for (int i = 0; i < 16; i=i+4) {
         DMESG("rx %x %x %x %x", data[i], data[i+1], data[i+2], data[i+3]);
     }
-    if (recvFrame.crc == JDSPI_MAGIC_NOOP) {
+    recvFrame = (jd_frame_t *)rxBuff;
+    if (rxBuff[0] == 0){
+        // shift by 1 byte
+        recvFrame = (jd_frame_t *)(rxBuff + 1);
+    }
+    if (recvFrame->crc == JDSPI_MAGIC_NOOP) {
         // empty frame, skip
-    } else if (recvFrame.crc != JDSPI_MAGIC) {
-        DMESG("JDA: magic mismatch %x", (int)recvFrame.crc);
-    } else if (recvFrame.size == 0) {
+    } else if (recvFrame->crc != JDSPI_MAGIC) {
+        DMESG("JDA: magic mismatch %x", (int)recvFrame->crc);
+    } else if (recvFrame->size == 0) {
         // empty frame, skip
     } else {
         for (;;) {
-            handleIncoming((jd_packet_t *)&recvFrame);
-            if (!jd_shift_frame(&recvFrame))
+            handleIncoming((jd_packet_t *)recvFrame);
+            if (!jd_shift_frame(recvFrame))
                 break;
         }
     }

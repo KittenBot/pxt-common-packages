@@ -18,7 +18,9 @@ class JDDisplay {
     const uint8_t *dataPtr;
     uint32_t *palette;
     jd_frame_t sendFrame;
-    jd_frame_t recvFrame;
+    jd_frame_t *recvFrame;
+    uint8_t *rxBuff;
+
     uint8_t bytesPerTransfer;
     bool inProgress;
     volatile bool stepWaiting;
